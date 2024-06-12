@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Directory Tree</title>
+    <style>
+      .tree {
+        margin-left: 20px;
+      }
+
+      .tree ul {
+        list-style-type: none;
+        position: relative;
+      }
+
+      .tree li {
+        margin: 0;
+        padding: 0 5px;
+        line-height: 20px;
+        position: relative;
+      }
+
+      .tree li::before {
+        content: "";
+        position: absolute;
+        top: -8px;
+        left: -20px;
+        border-left: 1px solid #999;
+        border-bottom: 1px solid #999;
+        width: 20px;
+        height: 15px;
+      }
+
+      .tree li::after {
+        content: "";
+        position: absolute;
+        top: 8px;
+        left: -20px;
+        border-left: 1px solid #999;
+        height: 100%;
+      }
+
+      .tree > ul > li::before,
+      .tree > ul > li::after {
+        border: none;
+      }
+
+      .tree li:last-child::after {
+        border: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Directory Tree</h1>
+    <div>
+      <input type="text" id="directoryPath" placeholder="Enter directory path" />
+      <button onclick="getDirectoryTree()">Show Tree</button>
+    </div>
+    <div id="treeContainer" class="tree"></div>
+    <script>
+      function getDirectoryTree() {
+        const directoryPath = document.getElementById("directoryPath").value;
+        fetch(`/tree/${directoryPath}`)
+          .then(response => response.text())
+          .then(data => {
+            const treeContainer = document.getElementById("treeContainer");
+            treeContainer.innerHTML = `<ul>${parseTree(data)}</ul>`;
+          })
+          .catch(error => {
+            console.error("Error fetching directory tree:", error);
+          });
+      }
+
+      function parseTree(data) {
+        const lines = data.trim().split("\n");
+        let html = "";
+        let indentationLevel = 0;
+
+        for (const line of lines) {
+          const indentation = line.match(/^\s*/)[0].length / 2;
+          const isDirectory = line.includes("/");
+          const fileName = line.replace(/^(\s*[\u2500\u251C\u2514]+ ?)|\/$/g, "");
+
+          if (indentation > indentationLevel) {
+            html += "<ul>"; // Start a new nested list
+          } else if (indentation < indentationLevel) {
+            html += "</li></ul>".repeat(indentationLevel - indentation) + "</li>"; // Close the previous nested lists
+          } else {
+            html += "</li>"; // Close the previous item
+          }
+
+          indentationLevel = indentation;
+          html += `<li>${isDirectory ? "<span>&#128194;</span>" : ""} ${fileName}`;
+        }
+
+        html += "</li>".repeat(indentationLevel + 1); // Close all remaining nested lists and items
+        return html;
+      }
+    </script>
+  </body>
+</html>
